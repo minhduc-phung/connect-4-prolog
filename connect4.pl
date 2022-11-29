@@ -12,6 +12,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 
+:- use_module(library(random)).
 %%%%%%%%%%%%%%%%%%
 %%%%% BOARD %%%%%%
 %%%%%%%%%%%%%%%%%%
@@ -56,19 +57,23 @@ connect4:- initial(X),
 
 %nextMove(J,X) J is the player that needs to move ('O' or 'X') and X is the board. Checks if the game has finished. If it hasn't finished, performs next move.
 nextMove('X',X):- wins('O',X),
-		  write('Machine wins!').
+		  write('Machine O wins!').
 nextMove('O',X):- wins('X',X),
-		  write('You win!').
+		  write('Machine X win!').
 nextMove(_,X):- full(X),
 		write('Draw').
-nextMove('X',X):- repeat, %repeats in case a column is full
-		  readColumn(C),
-		  play('X',C,X,X2), !,
+%nextMove('X',X):- repeat, %repeats in case a column is full
+%		  readColumn(C),
+%		  play('X',C,X,X2), !,
+%		  show(X2),
+%		  nextMove('O',X2). 
+nextMove('X',X):- machine('X','O',X,X2),
 		  show(X2),
-		  nextMove('O',X2). 
+		  nextMove('O',X2).
 nextMove('O',X):- machine('O','X',X,X2),
 		  show(X2),
 		  nextMove('X',X2).
+
 
 %play(X,P,T,T2) is satisfied if T2 is the board T after player X moves in column P
 play(X,P,board(T),board(T2)):- append(I,[C|F],T),
@@ -145,33 +150,51 @@ col(6).
 %%%%%%%%%%%%%%%%%%
 %machine(R,O,T,T2) Let R be the machine piece, O the opponent's piece and T the board game. Then T2 is board T after the machine movement
 % win if possible
-machine(R,_,T,T2):- iMachine(R,T,C,T2),
-		    nl, write('machine: '),
+machine(R,_,T,T2):- 
+			iMachine(R,T,C,T2),
+		    nl,
+			write('Winning'), nl,
+			write('machine: '),
 		    associateChar(L,C),
 		    write(L),
 		    nl,!.
 % otherwise, if machine can't win within a move, play a move that doesn't allow opponent O to win and that would allow us to obtain a connected 4
-machine(R,O,T,T2):- findall((Col,TA), (col(Col), play(R,Col,T,TA),\+ iMachine(O,TA,_,_), goodMove(R,Col,T)), [(C,T2)|_]),
-		    nl, write('machine: '),
+machine(R,O,T,T2):- 
+			findall((Col,TA), (col(Col), play(R,Col,T,TA),\+ iMachine(O,TA,_,_), goodMove(R,Col,T)), [(C,T2)|_]),
+		    nl, 
+			write('Blocking and allow a connected 4'), nl,
+			write('machine: '),
 		    associateChar(L,C),
 		    write(L),
 		    nl,!.
 % otherwise play a move that doesn't allow opponent O to win
-machine(R,O,T,T2):- findall((Col,TA), (col(Col), play(R,Col,T,TA),\+ iMachine(O,TA,_,_)), [(C,T2)|_]),
-		    nl, write('machine: '),
+machine(R,O,T,T2):- 
+			findall((Col,TA), (col(Col), play(R,Col,T,TA),\+ iMachine(O,TA,_,_)), [(C,T2)|_]),
+		    nl,
+			write('Blocking opponent'), nl,
+			write('machine: '),
 		    associateChar(L,C),
 		    write(L), nl,
 		    write('-'),!.
 % otherwise play a move intercepting one of the future winning options of opponent O
-machine(R,O,T,T2):- iMachine(O,T,C,_),
+machine(R,O,T,T2):- 
+			iMachine(O,T,C,_),
 		    play(R,C,T,T2),
-		    nl, write('machine: '),
+		    nl,
+			write('Intercepting a future winning option '), nl,
+			write('machine: '),
 		    associateChar(L,C),
 		    write(L), nl.
 % otherwise play wherever
-machine(R,_,T,T2):- col(C),
+machine(R,_,T,T2):- 
+			random_between(0,6,C),
+			col(C),
 		    play(R,C,T,T2),
-		    nl, write('machine: '),
+		    nl,
+			write('playing randomly at '),
+			write(C),
+			nl,
+			write('machine: '),
 		    associateChar(L,C),
 		    write(L), nl.
 				  
