@@ -74,6 +74,12 @@ nextMove('O',X):- machine('O','X',X,X2),
 		  show(X2),
 		  nextMove('X',X2).
 
+%validColumn(C) is satisfied if C is a valid column and it's not full
+validColumn(C):- C >= 0, C < 7, %check if C is a valid column
+		 initial(board(T)), %get initial board
+		 append(_, [C2|_], T), %get column C2
+		 append(_,[X|_],C2), %get first element of column C2
+		 X == ('-'). %check if column C2 is not full
 
 %play(X,P,T,T2) is satisfied if T2 is the board T after player X moves in column P
 play(X,P,board(T),board(T2)):- append(I,[C|F],T),
@@ -145,9 +151,105 @@ col(4).
 col(5).
 col(6).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% MINIMAX ALGORITHM %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% minimax(+Player, +Board, -Move, -Score)
+% Move is the best move for Player in Board, and
+% Score is the minimax score of Board for Player.
+
+% If the game is over, the score is the value of the board.
+minimax(Player, Opponent, Board, _, Score) :-
+	wins(Player, Board), !,
+	Score is 100.
+minimax(Player, Opponent, Board, _, Score) :-
+	wins(Opponent, Board), !,
+	Score is -100.
+minimax(Player, Opponent, Board, _, Score) :-
+	full(Board), !,
+	Score is 0.
+
+% If the game is not over, the score is the best score
+% that can be achieved from the current board.
+minimax(Player, Opponent, Board, Move, Score) :-
+	% Find all moves that can be made from the current board.
+	findall(M, move(Player, Board, M), Moves),
+	% For each move, find the score that results from making that move.
+	findall(S, score(1, -100, 100, Player, Board, _, S), Scores),
+	% Find the best move and score.
+	best(Player, Moves, Scores, Move, Score).
+
+
+
+% best(+Player, +Moves, +Scores, -BestMove, -BestScore)
+% BestMove is the best move for Player from the list of Moves,
+% and BestScore is the best score for Player from the list of Scores.
+% The best move is the one that results in the best score.
+
+% If there is only one move, it is the best move.
+best(Player, [Move], [Score], Move, Score).
+
+% If there are two moves, the best move is the one with the best score.
+best(Player, [Move1, Move2], [Score1, Score2], Move, Score) :-
+	Score1 > Score2, !,
+	Move = Move1,
+	Score = Score1.
+best(Player, [Move1, Move2], [Score1, Score2], Move, Score) :-
+	Move = Move2,
+	Score = Score2.
+
+% If there are more than two moves, the best move is the one with the best score.
+best(Player, [Move1, Move2 | Moves], [Score1, Score2 | Scores], Move, Score) :-
+	Score1 > Score2, !,
+	best(Player, [Move1 | Moves], [Score1 | Scores], Move, Score).
+best(Player, [Move1, Move2 | Moves], [Score1, Score2 | Scores], Move, Score) :-
+	best(Player, [Move2 | Moves], [Score2 | Scores], Move, Score).
+
+% score(+Depth, +Alpha, +Beta, +Player, +Board, -Move, -Score)
+% Move is the best move for Player in Board, and
+% Score is the minimax score of Board for Player.
+% Depth is the depth of the search tree.
+% Alpha is the best score that the maximizer currently can guarantee at this level or above.
+% Beta is the best score that the minimizer currently can guarantee at this level or above.
+
+% If the game is over, the score is the value of the board.
+score(_, _, _, Player, Board, _, Score) :- wins('X', Board), !,
+	Score = 100.
+score(_, _, _, Player, Board, _, Score) :- wins('O', Board), !,
+	Score = -100.
+score(_, _, _, Player, Board, _, Score) :- full(Board), !,
+	Score = 0.
+
+% If the game is not over, the score is the best score
+% that can be achieved from the current board.
+score(Depth, Alpha, Beta, Player, Board, Column, Score) :-
+	% Find all columns that a pawn can be put into.
+	findall(C, move(Player, Board, C), Columns),
+	% For each move, find the score that results from making that move.
+	findall(S, score(Depth, Alpha, Beta, Player, Board, _, S), Scores),
+	% Find the best move and score.
+	best(Player, Columns, Scores, Column, Score).
+
+% move(+Player, +Board, -Column) is true if Column is a column that a pawn can be put into.
+
+
+
 %%%%%%%%%%%%%%%%%%
 %%%%% MACHINE %%%%
 %%%%%%%%%%%%%%%%%%
+
+% machine with minimax algorithm
+machine(R,O, T, _):-
+	minimax(R,O,T,_,C),
+	write(C),
+	nl,
+	write('MiniMax'), nl,
+	write('machine: '),
+	associateChar(L,C),
+	write(L),
+	nl,!.
+
 %machine(R,O,T,T2) Let R be the machine piece, O the opponent's piece and T the board game. Then T2 is board T after the machine movement
 % win if possible
 machine(R,_,T,T2):- 
@@ -205,7 +307,17 @@ iMachine(R,T,C,T2):- findall((Col,TA), (col(Col), play(R,Col,T,TA),wins(R,TA)),[
 goodMove(R,Col,board(T)):- append(I,[C|_],T),
 			   length(I,Col),
 			   maxConnected(R,C,MaxConn),
-			   MaxConn >= 4.						
+			   MaxConn >= 4.
+
+
+
+% maxConnected(Player, L, MaxConn) is satisfied if MaxConn is the maximum number of connected pieces for Player in list L
+% maxConnected(_,[],0).
+% maxConnected(Player,[X|_],0):- X\=Player.
+% maxConnected(Player,['-'|X],N):- maxConnected(Player,X,Ns),
+% 			    N is Ns+1.
+% maxConnected(Player,[Player|X],N):- maxConnected(Player,X,Ns),
+% 			  N is Ns+1.
 
 % maxConnected(R,C,MaxConn) MaxConn is the maximum number of connected pieces that player R has/could have in column C
 maxConnected(_,[],0).

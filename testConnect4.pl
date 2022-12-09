@@ -37,6 +37,7 @@ place_piece(Board, Column, Player, NewBoard) :-
     (
         % if the bottom cell is empty, place the piece there
         Cell = 0
+
         -> NewColumn = [Cell|Bottom],
            NewBoard = [Top|NewColumn|Bottom]
         ;
@@ -123,7 +124,7 @@ minimax(Board, Player, Depth, Alpha, Beta, Score, Column) :-
 %   Score: score of the chosen column
 %   Column: index of the chosen column
 best_column([(Board, Score)|Results], Alpha, Beta, BestScore, BestColumn) :-
-    best_column(Results, Alpha, Beta, Score, Board, BestScore, BestColumn).
+best_column(Results, Alpha, Beta, Score, Board, BestScore, BestColumn).
 best_column([], _, _, BestScore, _, BestScore, _).
 best_column([(Board, Score)|Results], Alpha, Beta, PrevScore, PrevBoard, BestScore, BestColumn) :-
     (
@@ -154,8 +155,8 @@ best_column([(Board, Score)|Results], Alpha, Beta, PrevScore, PrevBoard, BestSco
 %   Column: index of the chosen column
 worst_column([(Board, Score)|Results], Alpha, Beta, WorstScore, WorstColumn) :-
     worst_column(Results, Alpha, Beta, Score, Board, WorstScore, WorstColumn).
-worst_column([], _, _, WorstScore, _, WorstScore, _).
-worst_column([(Board, Score)|Results], Alpha, Beta, PrevScore, PrevBoard, WorstScore, WorstColumn) :-
+    worst_column([], _, _, WorstScore, _, WorstScore, _).
+    worst_column([(Board, Score)|Results], Alpha, Beta, PrevScore, PrevBoard, WorstScore, WorstColumn) :-
     (
         Score < PrevScore % current score is lower than the previous worst score
         -> NewWorstScore is Score,
