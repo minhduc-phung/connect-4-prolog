@@ -1,3 +1,14 @@
+%%%%  Hexanome H4123 %%%%
+%                       %
+%      ZHANG Yi         %
+%    VIGNERON Chloé     %
+%    Minh Duc PHUNG     %
+%    Ngoc Minh Ngô      %
+%    Quoc Viet Pham     %
+%     Aicha EL BOU      %
+%                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Copyright 2016 Ramon Viñas, Marc Roig
 %
 % Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,11 +62,18 @@ iShowLine([[X|X2]|XS],[X2|XS2]):- write(X), write(' '),
 %%%%%%%%%%%%%%%%%%
 %%%% GAMEPLAY %%%%
 %%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Modification of the source code%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Initializes board and starts the game
-connect4:- initial(X),
+connect4:- 
+	   write('------ PUISSANCE 4 ------ '),nl,
+	   write('------ BIENVENUE AU JEU! ------ '),nl,
+	   initial(X),
 	   show(X),
 	   nextMove('X',X), !.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%End of the modification of the source code%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %nextMove(J,X) J is the player that needs to move ('O' or 'X') and X is the board. Checks if the game has finished. If it hasn't finished, performs next move.
 nextMove('X',X):- wins('O',X),
 		  write('Machine O wins!').
@@ -82,6 +100,8 @@ nextMove(Player, Board):-
 		  change_player(Player, Opponent),
 		  nextMove(Opponent, NewBoard).
 
+nbrColonnes(7).
+nbrLignes(6).
 % Minimax algorithm
 %
 % Arguments:
@@ -107,7 +127,9 @@ minimax(Board, _, _, _, _, Score, _) :-
 
 minimax(Board, Player, Depth, _, _, Score, Column) :-
 	Depth = 0,
-	score_Adjacency(Board, Column,Player, Score).  
+	score_Adjacency(Board, Column,Player, Score).  	% if we use adjacency heuristic 
+	%score_Density(Player,Score,Board(T)).   		% if we use density heuristic 
+	%score_Position(Player, Score).  				% if we use position heuristic 
 
 minimax(Board, Player, Depth, Alpha, Beta, Score, Column) :-
     Depth > 0, % continue searching if the search depth is not reached yet
@@ -218,9 +240,16 @@ case_Adjacent(board(T), ColIndex ,Player) :-
 %%%%%%%%%%%%%%%%%%%
 %DENSITY HEURISTIC%
 %%%%%%%%%%%%%%%%%%%
-score_density(Player,Score,Board(T)) :- Zone is 1, scoreNbPoints(Player,T,Zone,Score).
-score_density(_,_,0,_).
-scoreNbPoints(_,_,Zone,Score) :- Zone>6, Score is 0.
+score_Density(Player,Score,Board(T)) :- 
+	Zone is 1, 
+	scoreNbPoints(Player,T,Zone,Score).
+
+score_Density(_,_,0,_).
+
+scoreNbPoints(_,_,Zone,Score) :- 
+	Zone>6, 
+	Score is 0.
+
 scoreNbPoints(Player,T,Zone,Score) :- nbPointsZone(Player,T,Zone,S), NewZone is Zone+1, scoreNbPoints(Player,T,NewZone,NextScore), Score is S+NextScore.
 nbPointsZone(Player,T,Zone,ScoreZone) :- nbPionsZone(Player,T,Zone,NbTokens), ScoreZone is NbTokens^2.
 
@@ -251,6 +280,34 @@ get_position_char(Player, [X|L], Position):-
 player_token(Player, ColIndexAdj,RowIndexAdj,Board):-
 	nth0(ColIndexAdj, Board, Column),
 	nth0(RowIndexAdj, Column, Player).
+
+%%%%%%%%%%%%%%%%%%%%
+%POSITION HEURISTIC%
+%%%%%%%%%%%%%%%%%%%%
+score_Position(_, 0).
+
+score_Position(Player, Score):-
+	assert(nbrFullCase(0)),
+	bagof(Score4, searchCases(Player,Score4),Scores),
+	sum(Scores, SumScores),
+	nbrFullCase(NBR),
+	retract(nbrFullCase(NBR)),
+	Score is SumScores/(NBR+1).
+
+searchCases(Player, Score):-
+	nbrFullCase(N),
+	retract(nbrFullCase(N)),
+	NB is N+1,
+	assert(nbrFullCase(NB)),
+	searchCases(Player,X,Y,Score).
+
+searchCases(Player, X, Y, Score) :-
+	DistanceCenterX is X-4,
+	DistanceCenterY is Y-3.5,
+	abs(DistanceCenterX, AbsoluX),
+	abs(DistanceCenterY, AbsoluY),
+	ScoreCase is 30*((1/AbsoluX+1)+(1/AbsoluY+1)).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%End of the modification of the source code%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
