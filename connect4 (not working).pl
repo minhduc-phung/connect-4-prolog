@@ -63,25 +63,24 @@ nextMove('O',X):- wins('X',X),
 		  write('Machine X win!').
 nextMove(_,X):- full(X),
 		write('Draw').
-%nextMove('X',X):- repeat, %repeats in case a column is full
-%		  readColumn(C),
-%		  play('X',C,X,X2), !,
-%		  show(X2),
-%		  nextMove('O',X2). 
-% nextMove('X',X):- machine('X','O',X,X2),
+% nextMove('X',X):- repeat, %repeats in case a column is full
+		  % readColumn(C),
+		  % play('X',C,X,X2), !,
 		  % show(X2),
-		  % nextMove('O',X2).
+		  % nextMove('O',X2). 
 % nextMove('O',X):- machine('O','X',X,X2),
 		  % show(X2),
 		  % nextMove('X',X2).
+		  
+		  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Modification of the source code%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 'X' is player 1		  
 nextMove(Player, Board):- 
-		  play(Board, NewBoard, Player, 3),
+		  make_move(Board, NewBoard, Player, 3),
 		  show(NewBoard),
 		  change_player(Player, Opponent),
 		  nextMove(Opponent, NewBoard).
-
 
 % Minimax algorithm
 %
@@ -194,57 +193,10 @@ worst_column([(Board, Score)|Results], Alpha, Beta, PrevScore, PrevBoard, WorstS
         ; worst_column(Results, NewAlpha, NewBeta, NewWorstScore, NewWorstColumn, WorstScore, WorstColumn)
     ).
 
-play(Board, NewBoard, Player, Depth) :-
+make_move(Board, NewBoard, Player, Depth) :-
         minimax(Board, Player, Depth, -100000, 100000, _, Column), % choose the best column using the minimax algorithm
         place_piece(Player, Column, Board, NewBoard). % place a piece in the chosen column
 
-%play(X,P,T,T2) is satisfied if T2 is the board T after player X moves in column P
-place_piece(X,P,board(T),board(T2)):- append(I,[C|F],T),
-			       length(I,P), 
-		               playColumn(X,C,C2),
-			       append(I,[C2|F],T2).
-
-%playColumn(X,C,C2) is satisfied if column C2 is column C after player X plays there
-playColumn(X,['-'],[X]):- !. % last spot in column
-playColumn(X,['-',A|AS],[X,A|AS]):- A \== ('-'), !. % play above someone's piece
-playColumn(X,['-'|AS],['-'|AS2]):- playColumn(X,AS,AS2). % descend column
-
-% 'X' is player 1 and 'O' is player 2
-change_player('X','O').
-change_player('O','X').
-
-%wins(X,T) is satisfied if player X has won in board T
-%check if there's a column in T with 4 connected pieces of player X
-wins(X,board(T)):- append(_, [C|_], T), % check if there's a column...
-	           append(_,[X,X,X,X|_],C). % ...which has 4 connected pieces of player X
-%check if there's a row in T with 4 connected pieces of player X
-wins(X,board(T)):- append(_,[C1,C2,C3,C4|_],T), % check if 4 connected columns exists in board...
-		   append(I1,[X|_],C1), %...such that all of them contain a piece of player X...
-		   append(I2,[X|_],C2),
-		   append(I3,[X|_],C3),
-		   append(I4,[X|_],C4),
-		   length(I1,M), length(I2,M), length(I3,M), length(I4,M). %...and every piece is in the same height
-%check if there's a diagonal (type \) in T with 4 connected pieces of player X
-wins(X,board(T)):- append(_,[C1,C2,C3,C4|_],T), % check if 4 connected columns exists in board...
-		   append(I1,[X|_],C1), %...such that all of them contain a piece of player X...
-		   append(I2,[X|_],C2),
-		   append(I3,[X|_],C3),
-		   append(I4,[X|_],C4),
-		   length(I1,M1), length(I2,M2), length(I3,M3), length(I4,M4),
-		   M2 is M1+1, M3 is M2+1, M4 is M3+1. %...and every piece is within the same diagonal \
-%check if there's a diagonal (type /) in T with 4 connected pieces of player X
-wins(X,board(T)):- append(_,[C1,C2,C3,C4|_],T), % check if 4 connected columns exists in board...
-		   append(I1,[X|_],C1), %...such that all of them contain a piece of player X...
-		   append(I2,[X|_],C2),
-		   append(I3,[X|_],C3),
-		   append(I4,[X|_],C4),
-		   length(I1,M1), length(I2,M2), length(I3,M3), length(I4,M4),
-		   M2 is M1-1, M3 is M2-1, M4 is M3-1. %...and every piece is within the same diagonal /
-						
-%full(T) is satisfied if there isn't any free spot ('-')
-full(board(T)):- \+ (append(_,[C|_],T),
-		 append(_,['-'|_],C)).
-		 
 		 
 %%%%%%%%%%%%%%%%%%%%%
 %ADJACENCY HEURISTIC%
@@ -283,6 +235,68 @@ zone(4,X,Y) :- X > 4, Y > 3.
 zone(5,X,Y) :- X = 4, Y > 3.
 zone(6,X,Y) :- X =<3, Y > 3.
 
+% 'X' is player 1 and 'O' is player 2
+change_player('X','O').
+change_player('O','X').
+
+% Get the position of token
+get_position_char(Player, [Player|_],0).
+
+get_position_char(Player, [X|L], Position):-
+	X \== Player,
+	NewPos is Position-1,
+	get_position_char(Player, L, NewPos).
+
+% Get the token of the player
+player_token(Player, ColIndexAdj,RowIndexAdj,Board):-
+	nth0(ColIndexAdj, Board, Column),
+	nth0(RowIndexAdj, Column, Player).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%End of the modification of the source code%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%play(X,P,T,T2) is satisfied if T2 is the board T after player X moves in column P
+play(X,P,board(T),board(T2)):- append(I,[C|F],T),
+			       length(I,P), 
+		               playColumn(X,C,C2),
+			       append(I,[C2|F],T2).
+
+%playColumn(X,C,C2) is satisfied if column C2 is column C after player X plays there
+playColumn(X,['-'],[X]):- !. % last spot in column
+playColumn(X,['-',A|AS],[X,A|AS]):- A \== ('-'), !. % play above someone's piece
+playColumn(X,['-'|AS],['-'|AS2]):- playColumn(X,AS,AS2). % descend column
+
+%wins(X,T) is satisfied if player X has won in board T
+%check if there's a column in T with 4 connected pieces of player X
+wins(X,board(T)):- append(_, [C|_], T), % check if there's a column...
+	           append(_,[X,X,X,X|_],C). % ...which has 4 connected pieces of player X
+%check if there's a row in T with 4 connected pieces of player X
+wins(X,board(T)):- append(_,[C1,C2,C3,C4|_],T), % check if 4 connected columns exists in board...
+		   append(I1,[X|_],C1), %...such that all of them contain a piece of player X...
+		   append(I2,[X|_],C2),
+		   append(I3,[X|_],C3),
+		   append(I4,[X|_],C4),
+		   length(I1,M), length(I2,M), length(I3,M), length(I4,M). %...and every piece is in the same height
+%check if there's a diagonal (type \) in T with 4 connected pieces of player X
+wins(X,board(T)):- append(_,[C1,C2,C3,C4|_],T), % check if 4 connected columns exists in board...
+		   append(I1,[X|_],C1), %...such that all of them contain a piece of player X...
+		   append(I2,[X|_],C2),
+		   append(I3,[X|_],C3),
+		   append(I4,[X|_],C4),
+		   length(I1,M1), length(I2,M2), length(I3,M3), length(I4,M4),
+		   M2 is M1+1, M3 is M2+1, M4 is M3+1. %...and every piece is within the same diagonal \
+%check if there's a diagonal (type /) in T with 4 connected pieces of player X
+wins(X,board(T)):- append(_,[C1,C2,C3,C4|_],T), % check if 4 connected columns exists in board...
+		   append(I1,[X|_],C1), %...such that all of them contain a piece of player X...
+		   append(I2,[X|_],C2),
+		   append(I3,[X|_],C3),
+		   append(I4,[X|_],C4),
+		   length(I1,M1), length(I2,M2), length(I3,M3), length(I4,M4),
+		   M2 is M1-1, M3 is M2-1, M4 is M3-1. %...and every piece is within the same diagonal /
+						
+%full(T) is satisfied if there isn't any free spot ('-')
+full(board(T)):- \+ (append(_,[C|_],T),
+		 append(_,['-'|_],C)).
+		 
 %%%%%%%%%%%%%%%%%%
 %%% READ MOVES %%%
 %%%%%%%%%%%%%%%%%%
@@ -310,18 +324,45 @@ col(4).
 col(5).
 col(6).
 
-get_position_char(Player, [Player|_],0).
+%%%%%%%%%%%%%%%%%%
+%%%%% MACHINE %%%%
+%%%%%%%%%%%%%%%%%%
+%machine(R,O,T,T2) Let R be the machine piece, O the opponent's piece and T the board game. Then T2 is board T after the machine movement
+% win if possible
+machine(R,_,T,T2):- iMachine(R,T,C,T2),
+		    nl, write('machine: '),
+		    associateChar(L,C),
+		    write(L),
+		    nl,!.
+% otherwise, if machine can't win within a move, play a move that doesn't allow opponent O to win and that would allow us to obtain a connected 4
+machine(R,O,T,T2):- findall((Col,TA), (col(Col), play(R,Col,T,TA),\+ iMachine(O,TA,_,_), goodMove(R,Col,T)), [(C,T2)|_]),
+		    nl, write('machine: '),
+		    associateChar(L,C),
+		    write(L),
+		    nl,!.
+% otherwise play a move that doesn't allow opponent O to win
+machine(R,O,T,T2):- findall((Col,TA), (col(Col), play(R,Col,T,TA),\+ iMachine(O,TA,_,_)), [(C,T2)|_]),
+		    nl, write('machine: '),
+		    associateChar(L,C),
+		    write(L), nl,
+		    write('-'),!.
+% otherwise play a move intercepting one of the future winning options of opponent O
+machine(R,O,T,T2):- iMachine(O,T,C,_),
+		    play(R,C,T,T2),
+		    nl, write('machine: '),
+		    associateChar(L,C),
+		    write(L), nl.
+% otherwise play wherever
+machine(R,_,T,T2):- col(C),
+		    play(R,C,T,T2),
+		    nl, write('machine: '),
+		    associateChar(L,C),
+		    write(L), nl.
+				  
+%iMachine(R,T,C,T2) is satisfied if player R can play in column C of board T and obtain a winning board T2
+iMachine(R,T,C,T2):- findall((Col,TA), (col(Col), play(R,Col,T,TA),wins(R,TA)),[(C,T2)|_]).
 
-get_position_char(Player, [X|L], Position):-
-	X \== Player,
-	NewPos is Position-1,
-	get_position_char(Player, L, NewPos).
-
-player_token(Player, ColIndexAdj,RowIndexAdj,Board):-
-	nth0(ColIndexAdj, Board, Column),
-	nth0(RowIndexAdj, Column, Player).
-
-% We consider that a good move is one allowing us to win in a column. Further improvements: rows and diagonals.
+%We consider that a good move is one allowing us to win in a column. Further improvements: rows and diagonals.
 goodMove(R,Col,board(T)):- append(I,[C|_],T),
 			   length(I,Col),
 			   maxConnected(R,C,MaxConn),
@@ -334,10 +375,3 @@ maxConnected(R,['-'|X],N):- maxConnected(R,X,Ns),
 			    N is Ns+1.
 maxConnected(R,[R|X],N):- maxConnected(R,X,Ns),
 			  N is Ns+1.
-
-sumMaxConnected(_, 7, _).
-sumMaxConnected(Player, Column, Score) :-
-	maxConnected(Player, Column, MaxConn),
-	Column is Column + 1,
-	NewScore is Score + MaxConn,
-	sumMaxConnected(Player, Column, NewScore).
