@@ -302,8 +302,12 @@ searchCases(Player, Score):-
 	searchCases(Player,X,Y,Score).
 
 searchCases(Player, X, Y, Score) :-
-	DistanceCenterX is X-4,
-	DistanceCenterY is Y-3.5,
+	nbrColonnes(Colonne),
+	nbrLignes(Ligne),
+	XCenter is Colonne // 2 + 1,
+	YCenter is Ligne // 2 + 1,
+	DistanceCenterX is X - XCenter,
+	DistanceCenterY is Y - YCenter,
 	abs(DistanceCenterX, AbsoluX),
 	abs(DistanceCenterY, AbsoluY),
 	ScoreCase is 30*((1/AbsoluX+1)+(1/AbsoluY+1)).
